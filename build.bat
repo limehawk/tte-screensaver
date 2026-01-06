@@ -46,7 +46,7 @@ pyinstaller --onefile --windowed ^
     --hidden-import terminaltexteffects.effects.effect_vhstape ^
     --hidden-import terminaltexteffects.effects.effect_waves ^
     --hidden-import terminaltexteffects.effects.effect_wipe ^
-    src/main.py
+    run.py
 
 REM Rename to .scr
 if exist "dist\tte-screensaver.exe" (
