@@ -59,36 +59,22 @@ class ConfigDialog:
         h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Effects section
-        effects_label = ttk.Label(
-            main_frame, text="Enabled Effects:", font=("", 10, "bold")
-        )
-        effects_label.pack(anchor=tk.W, pady=(10, 5))
+        effects_header = ttk.Frame(main_frame)
+        effects_header.pack(fill=tk.X, pady=(10, 5))
 
-        # Effects frame with scrollable canvas
-        effects_container = ttk.Frame(main_frame)
-        effects_container.pack(fill=tk.X, pady=(0, 10))
+        ttk.Label(effects_header, text="Enabled Effects:", font=("", 10, "bold")).pack(side=tk.LEFT)
 
-        # Create a canvas with scrollbar for effects
-        effects_canvas = tk.Canvas(effects_container, height=120)
-        effects_scrollbar = ttk.Scrollbar(
-            effects_container, orient=tk.VERTICAL, command=effects_canvas.yview
-        )
-        effects_frame = ttk.Frame(effects_canvas)
+        # Select All / None buttons
+        ttk.Button(effects_header, text="Select All", command=self._select_all_effects, width=10).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(effects_header, text="Select None", command=self._select_no_effects, width=10).pack(side=tk.RIGHT)
 
-        effects_frame.bind(
-            "<Configure>",
-            lambda e: effects_canvas.configure(scrollregion=effects_canvas.bbox("all")),
-        )
+        # Effects frame - simple grid, no scrolling needed
+        effects_frame = ttk.Frame(main_frame)
+        effects_frame.pack(fill=tk.X, pady=(0, 10))
 
-        effects_canvas.create_window((0, 0), window=effects_frame, anchor=tk.NW)
-        effects_canvas.configure(yscrollcommand=effects_scrollbar.set)
-
-        effects_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        effects_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Create checkboxes for each effect (in columns)
+        # Create checkboxes for each effect in a 5-column grid
         available_effects = get_available_effect_names()
-        num_cols = 4
+        num_cols = 5
         for idx, effect_name in enumerate(available_effects):
             var = tk.BooleanVar(value=effect_name in self.config.enabled_effects)
             self.effect_vars[effect_name] = var
@@ -97,7 +83,11 @@ class ConfigDialog:
             col = idx % num_cols
 
             cb = ttk.Checkbutton(effects_frame, text=effect_name, variable=var)
-            cb.grid(row=row, column=col, sticky=tk.W, padx=5, pady=2)
+            cb.grid(row=row, column=col, sticky=tk.W, padx=8, pady=3)
+
+        # Make columns expand evenly
+        for col in range(num_cols):
+            effects_frame.columnconfigure(col, weight=1)
 
         # Settings section
         settings_frame = ttk.LabelFrame(main_frame, text="Settings", padding="10")
@@ -134,6 +124,16 @@ class ConfigDialog:
         ttk.Button(button_frame, text="Preview", command=self._preview).pack(
             side=tk.LEFT
         )
+
+    def _select_all_effects(self) -> None:
+        """Select all effects."""
+        for var in self.effect_vars.values():
+            var.set(True)
+
+    def _select_no_effects(self) -> None:
+        """Deselect all effects."""
+        for var in self.effect_vars.values():
+            var.set(False)
 
     def _load_current_config(self) -> None:
         """Load current config values into the dialog."""
