@@ -146,16 +146,8 @@ class ANSIRenderer:
             cursor_col += 1
             i += 1
 
-        # Trim empty rows from the result
-        result = []
-        for row in grid:
-            # Check if row has any non-space characters
-            if any(char != " " for char, _ in row):
-                result.append(row)
-            elif result:  # Keep empty rows in the middle
-                result.append(row)
-
-        return result if result else grid[:1]
+        # Return full grid - don't trim rows, as this preserves TTE's centering
+        return grid
 
     def _parse_color_codes(
         self, codes: List[str], current_color: Tuple[int, int, int]
