@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tte-screensaver"
+version = "0.1.0"
+description = "Windows screensaver using Terminal Text Effects"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "terminaltexteffects",
+    "pygame",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyinstaller",
+]
+
+[project.scripts]
+tte-screensaver = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
