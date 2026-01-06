@@ -1,0 +1,86 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --windowed `
+            --name "tte-screensaver" `
+            --add-data "assets;assets" `
+            --hidden-import terminaltexteffects.effects.effect_beams `
+            --hidden-import terminaltexteffects.effects.effect_binarypath `
+            --hidden-import terminaltexteffects.effects.effect_blackhole `
+            --hidden-import terminaltexteffects.effects.effect_bouncyballs `
+            --hidden-import terminaltexteffects.effects.effect_bubbles `
+            --hidden-import terminaltexteffects.effects.effect_burn `
+            --hidden-import terminaltexteffects.effects.effect_colorshift `
+            --hidden-import terminaltexteffects.effects.effect_crumble `
+            --hidden-import terminaltexteffects.effects.effect_decrypt `
+            --hidden-import terminaltexteffects.effects.effect_errorcorrect `
+            --hidden-import terminaltexteffects.effects.effect_expand `
+            --hidden-import terminaltexteffects.effects.effect_fireworks `
+            --hidden-import terminaltexteffects.effects.effect_highlight `
+            --hidden-import terminaltexteffects.effects.effect_laseretch `
+            --hidden-import terminaltexteffects.effects.effect_matrix `
+            --hidden-import terminaltexteffects.effects.effect_middleout `
+            --hidden-import terminaltexteffects.effects.effect_orbittingvolley `
+            --hidden-import terminaltexteffects.effects.effect_overflow `
+            --hidden-import terminaltexteffects.effects.effect_pour `
+            --hidden-import terminaltexteffects.effects.effect_print `
+            --hidden-import terminaltexteffects.effects.effect_rain `
+            --hidden-import terminaltexteffects.effects.effect_randomsequence `
+            --hidden-import terminaltexteffects.effects.effect_rings `
+            --hidden-import terminaltexteffects.effects.effect_scattered `
+            --hidden-import terminaltexteffects.effects.effect_slice `
+            --hidden-import terminaltexteffects.effects.effect_slide `
+            --hidden-import terminaltexteffects.effects.effect_spotlights `
+            --hidden-import terminaltexteffects.effects.effect_spray `
+            --hidden-import terminaltexteffects.effects.effect_swarm `
+            --hidden-import terminaltexteffects.effects.effect_sweep `
+            --hidden-import terminaltexteffects.effects.effect_synthgrid `
+            --hidden-import terminaltexteffects.effects.effect_unstable `
+            --hidden-import terminaltexteffects.effects.effect_vhstape `
+            --hidden-import terminaltexteffects.effects.effect_waves `
+            --hidden-import terminaltexteffects.effects.effect_wipe `
+            src/main.py
+
+      - name: Rename to .scr
+        run: |
+          copy dist\tte-screensaver.exe dist\tte-screensaver.scr
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tte-screensaver-windows
+          path: dist/tte-screensaver.scr
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/tte-screensaver.scr
+          generate_release_notes: true
