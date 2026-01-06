@@ -7,16 +7,43 @@ from pathlib import Path
 from typing import List, Tuple
 
 
-# Default effects to cycle through
+# Default effects to cycle through - all available effects
 DEFAULT_EFFECTS = [
-    "Matrix",
-    "Rain",
-    "Decrypt",
     "Beams",
+    "BinaryPath",
+    "Blackhole",
+    "BouncyBalls",
+    "Bubbles",
     "Burn",
-    "VHSTape",
+    "ColorShift",
+    "Crumble",
+    "Decrypt",
+    "ErrorCorrect",
+    "Expand",
+    "Fireworks",
+    "Highlight",
+    "LaserEtch",
+    "Matrix",
+    "MiddleOut",
+    "OrbittingVolley",
+    "Overflow",
+    "Pour",
+    "Print",
+    "Rain",
+    "RandomSequence",
+    "Rings",
+    "Scattered",
+    "Slice",
     "Slide",
     "Spotlights",
+    "Spray",
+    "Swarm",
+    "Sweep",
+    "SynthGrid",
+    "Unstable",
+    "VHSTape",
+    "Waves",
+    "Wipe",
 ]
 
 DEFAULT_ASCII_ART = r"""
@@ -38,7 +65,7 @@ class Config:
     effect_duration: float = 15.0  # seconds per effect
     font_size: int = 20
     background_color: Tuple[int, int, int] = (0, 0, 0)
-    target_fps: int = 60
+    target_fps: int = 300
 
     def to_dict(self) -> dict:
         """Convert config to dictionary for JSON serialization."""

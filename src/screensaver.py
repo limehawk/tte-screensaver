@@ -1,12 +1,38 @@
 """Main screensaver pygame loop."""
 
+import os
 import sys
 import pygame
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from .config import Config, load_config
 from .renderer import ANSIRenderer
 from .effects import EffectManager
+
+
+def get_virtual_desktop_size() -> Tuple[int, int, int, int]:
+    """
+    Get the virtual desktop bounds (covers all monitors).
+    Returns (x, y, width, height) where x,y is the top-left corner.
+    """
+    try:
+        # Try using ctypes to get virtual screen metrics (Windows)
+        import ctypes
+        user32 = ctypes.windll.user32
+        # SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77
+        # SM_CXVIRTUALSCREEN = 78, SM_CYVIRTUALSCREEN = 79
+        x = user32.GetSystemMetrics(76)
+        y = user32.GetSystemMetrics(77)
+        width = user32.GetSystemMetrics(78)
+        height = user32.GetSystemMetrics(79)
+        return (x, y, width, height)
+    except Exception:
+        pass
+
+    # Fallback: use pygame's display info
+    pygame.display.init()
+    info = pygame.display.Info()
+    return (0, 0, info.current_w, info.current_h)
 
 
 class Screensaver:
@@ -31,10 +57,18 @@ class Screensaver:
         pygame.mouse.set_visible(False)
 
         if fullscreen:
-            # Get display info for fullscreen
-            info = pygame.display.Info()
-            screen_size = (info.current_w, info.current_h)
-            self.screen = pygame.display.set_mode(screen_size, pygame.FULLSCREEN)
+            # Get virtual desktop size (spans all monitors)
+            vx, vy, vw, vh = get_virtual_desktop_size()
+            screen_size = (vw, vh)
+
+            # Position window at virtual desktop origin
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f"{vx},{vy}"
+
+            # Create borderless fullscreen window spanning all monitors
+            self.screen = pygame.display.set_mode(
+                screen_size,
+                pygame.NOFRAME | pygame.FULLSCREEN
+            )
         else:
             # Windowed mode for testing
             screen_size = (1280, 720)

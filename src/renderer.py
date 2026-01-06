@@ -1,7 +1,10 @@
 """ANSI escape code parser and pygame renderer."""
 
+import os
 import re
+import sys
 from typing import Tuple, List, Optional
+from pathlib import Path
 import pygame
 
 
@@ -10,6 +13,24 @@ ANSI_ESCAPE = re.compile(r"\x1b\[([0-9;]*)m")
 ANSI_CURSOR_POS = re.compile(r"\x1b\[(\d+);(\d+)H")
 ANSI_CLEAR = re.compile(r"\x1b\[2?J")
 ANSI_ANY = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def get_bundled_font_path() -> Optional[Path]:
+    """Get path to the bundled font file."""
+    # When running from source
+    src_dir = Path(__file__).parent.parent
+    font_path = src_dir / "assets" / "font.ttf"
+    if font_path.exists():
+        return font_path
+
+    # When running as frozen executable (PyInstaller)
+    if getattr(sys, "frozen", False):
+        base_path = Path(sys._MEIPASS)
+        font_path = base_path / "assets" / "font.ttf"
+        if font_path.exists():
+            return font_path
+
+    return None
 
 
 class ANSIRenderer:
@@ -33,8 +54,20 @@ class ANSIRenderer:
         self._char_cache: dict = {}
 
     def _get_monospace_font(self, size: int) -> pygame.font.Font:
-        """Get a monospace font, trying system fonts first."""
+        """Get a monospace font, trying bundled font first."""
+        # Try bundled font first (has full Unicode support)
+        bundled_font = get_bundled_font_path()
+        if bundled_font:
+            try:
+                return pygame.font.Font(str(bundled_font), size)
+            except Exception:
+                pass
+
+        # Fallback to system fonts with good Unicode support
         monospace_fonts = [
+            "cascadia code",
+            "cascadia mono",
+            "jetbrains mono",
             "consolas",
             "courier new",
             "courier",
