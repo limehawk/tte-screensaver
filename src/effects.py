@@ -1,5 +1,6 @@
 """Effect management and cycling for tte-screensaver."""
 
+import random
 import time
 from typing import Iterator, Optional, Dict, Type, List
 from dataclasses import dataclass
@@ -131,6 +132,9 @@ class EffectManager:
             # Fallback to some defaults if no valid effects
             self.enabled_effects = ["Matrix", "Rain", "Decrypt"]
 
+        # Shuffle effects for random order
+        random.shuffle(self.enabled_effects)
+
         self.state = EffectState()
         self._create_effect()
 
@@ -162,10 +166,12 @@ class EffectManager:
         return elapsed >= self.effect_duration or self.state.effect_completed
 
     def switch_to_next_effect(self) -> None:
-        """Switch to the next effect in the cycle."""
-        self.state.current_effect_index = (
-            self.state.current_effect_index + 1
-        ) % len(self.enabled_effects)
+        """Switch to a random different effect."""
+        if len(self.enabled_effects) > 1:
+            # Pick a random effect that's different from current
+            current = self.state.current_effect_index
+            choices = [i for i in range(len(self.enabled_effects)) if i != current]
+            self.state.current_effect_index = random.choice(choices)
         self._create_effect()
 
     def get_next_frame(self) -> Optional[str]:
