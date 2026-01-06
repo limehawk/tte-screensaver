@@ -2,7 +2,6 @@
 
 import random
 from typing import Iterator, Optional, Dict, Type, List
-from dataclasses import dataclass
 
 # Import all available TTE effects
 from terminaltexteffects.effects.effect_beams import Beams
@@ -87,17 +86,8 @@ def get_available_effect_names() -> List[str]:
     return sorted(AVAILABLE_EFFECTS.keys())
 
 
-@dataclass
-class EffectState:
-    """Tracks the current state of effect cycling."""
-
-    current_effect_index: int = 0
-    current_iterator: Optional[Iterator[str]] = None
-    effect_completed: bool = False
-
-
 class EffectManager:
-    """Manages effect creation and cycling."""
+    """Manages effect creation and cycling with pre-loading for smooth transitions."""
 
     def __init__(
         self,
@@ -106,15 +96,6 @@ class EffectManager:
         canvas_width: int = 80,
         canvas_height: int = 24,
     ):
-        """
-        Initialize the effect manager.
-
-        Args:
-            text: The ASCII art text to animate
-            enabled_effects: List of effect names to cycle through
-            canvas_width: Width of the terminal canvas in characters
-            canvas_height: Height of the terminal canvas in characters
-        """
         self.text = text
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
@@ -124,84 +105,65 @@ class EffectManager:
             name for name in enabled_effects if name in AVAILABLE_EFFECTS
         ]
         if not self.enabled_effects:
-            # Fallback to some defaults if no valid effects
             self.enabled_effects = ["Matrix", "Rain", "Decrypt"]
 
         # Shuffle effects for random order
         random.shuffle(self.enabled_effects)
 
-        self.state = EffectState()
-        self._create_effect()
+        self._current_index = 0
+        self._current_iterator: Optional[Iterator[str]] = None
+        self._next_iterator: Optional[Iterator[str]] = None
+        self._next_index: Optional[int] = None
+        self._effect_completed = False
 
-    def _create_effect(self) -> None:
-        """Create a new effect instance for the current effect index."""
-        effect_name = self.enabled_effects[self.state.current_effect_index]
+        # Create first effect
+        self._current_iterator = self._create_effect_iterator(self._current_index)
+        # Pre-load next effect
+        self._preload_next()
+
+    def _create_effect_iterator(self, index: int) -> Iterator[str]:
+        """Create an effect iterator for the given index."""
+        effect_name = self.enabled_effects[index]
         effect_class = AVAILABLE_EFFECTS[effect_name]
 
-        # Create the effect instance
         effect = effect_class(self.text)
-
-        # Configure for external rendering (GUI mode)
-        # ignore_terminal_dimensions allows rendering outside terminal constraints
         effect.terminal_config.ignore_terminal_dimensions = True
-
-        # Use full screen canvas dimensions for effects like Matrix/Rain
-        # to render across the entire display, not just around the text
         effect.terminal_config.canvas_width = self.canvas_width
         effect.terminal_config.canvas_height = self.canvas_height
-
-        # Center the text within the canvas (like Omarchy's --anchor-text c)
-        # Canvas fills the monitor, so just center text within it
         effect.terminal_config.anchor_text = "c"
+        effect.terminal_config.frame_rate = 0
 
-        # Set frame rate to match our target
-        effect.terminal_config.frame_rate = 0  # 0 = unlimited, we control timing
+        return iter(effect)
 
-        # Get the iterator
-        self.state.current_iterator = iter(effect)
-        self.state.effect_completed = False
+    def _preload_next(self) -> None:
+        """Pre-load the next random effect in background."""
+        if len(self.enabled_effects) > 1:
+            choices = [i for i in range(len(self.enabled_effects)) if i != self._current_index]
+            self._next_index = random.choice(choices)
+        else:
+            self._next_index = 0
+        self._next_iterator = self._create_effect_iterator(self._next_index)
 
     def get_current_effect_name(self) -> str:
         """Get the name of the currently active effect."""
-        return self.enabled_effects[self.state.current_effect_index]
-
-    def should_switch_effect(self) -> bool:
-        """Check if it's time to switch to the next effect."""
-        # Only switch when effect completes
-        return self.state.effect_completed
+        return self.enabled_effects[self._current_index]
 
     def switch_to_next_effect(self) -> None:
-        """Switch to a random different effect."""
-        if len(self.enabled_effects) > 1:
-            # Pick a random effect that's different from current
-            current = self.state.current_effect_index
-            choices = [i for i in range(len(self.enabled_effects)) if i != current]
-            self.state.current_effect_index = random.choice(choices)
-        self._create_effect()
+        """Switch to the pre-loaded next effect (instant, no stutter)."""
+        # Use pre-loaded effect
+        self._current_index = self._next_index
+        self._current_iterator = self._next_iterator
+        self._effect_completed = False
+        # Pre-load the next one for later
+        self._preload_next()
 
     def get_next_frame(self) -> Optional[str]:
-        """
-        Get the next frame from the current effect.
-
-        Returns None if the effect has completed and we should switch.
-        """
-        if self.state.current_iterator is None:
-            self._create_effect()
-
-        try:
-            frame = next(self.state.current_iterator)
-            return frame
-        except StopIteration:
-            self.state.effect_completed = True
+        """Get the next frame. Returns None when effect completes."""
+        if self._current_iterator is None:
             return None
 
-    def update_text(self, new_text: str) -> None:
-        """Update the text and restart the current effect."""
-        self.text = new_text
-        self._create_effect()
-
-    def update_canvas_size(self, width: int, height: int) -> None:
-        """Update the canvas size and restart the current effect."""
-        self.canvas_width = width
-        self.canvas_height = height
-        self._create_effect()
+        try:
+            return next(self._current_iterator)
+        except StopIteration:
+            self._effect_completed = True
+            return None

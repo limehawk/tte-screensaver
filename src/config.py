@@ -64,7 +64,7 @@ class Config:
     enabled_effects: List[str] = field(default_factory=lambda: DEFAULT_EFFECTS.copy())
     font_size: int = 20
     background_color: Tuple[int, int, int] = (0, 0, 0)
-    target_fps: int = 60  # 60 FPS is smooth and reduces CPU load on multi-monitor
+    target_fps: int = 120  # Higher FPS = faster animations
 
     def to_dict(self) -> dict:
         """Convert config to dictionary for JSON serialization."""
