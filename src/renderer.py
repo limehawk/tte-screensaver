@@ -87,28 +87,27 @@ class ANSIRenderer:
         # Fallback to default font
         return pygame.font.Font(None, size)
 
-    def parse_ansi_frame(self, frame: str, canvas_width: int = 200, canvas_height: int = 100) -> List[List[Tuple[str, Tuple[int, int, int]]]]:
+    def parse_ansi_frame_sparse(self, frame: str, canvas_width: int = 200, canvas_height: int = 100) -> List[Tuple[int, int, str, Tuple[int, int, int]]]:
         """
-        Parse an ANSI frame into a grid of (character, color) tuples.
-        Properly handles cursor positioning escape codes.
-
-        Returns a 2D list where each row is a list of (char, rgb_color) tuples.
+        Parse ANSI frame into sparse list of non-empty cells.
+        Returns list of (row, col, char, color) tuples - much faster than full grid.
         """
-        # Initialize grid with spaces
-        grid = [[(" ", self.default_fg_color) for _ in range(canvas_width)] for _ in range(canvas_height)]
-
+        cells = []
         current_color = self.default_fg_color
         cursor_row = 0
         cursor_col = 0
 
         i = 0
-        while i < len(frame):
+        frame_len = len(frame)
+        while i < frame_len:
+            char = frame[i]
+
             # Check for ANSI escape sequence
-            if frame[i] == "\x1b" and i + 1 < len(frame) and frame[i + 1] == "[":
+            if char == "\x1b" and i + 1 < frame_len and frame[i + 1] == "[":
                 # Try to match cursor position code first
                 pos_match = ANSI_CURSOR_POS.match(frame, i)
                 if pos_match:
-                    cursor_row = int(pos_match.group(1)) - 1  # 1-indexed to 0-indexed
+                    cursor_row = int(pos_match.group(1)) - 1
                     cursor_col = int(pos_match.group(2)) - 1
                     i = pos_match.end()
                     continue
@@ -128,26 +127,26 @@ class ANSIRenderer:
                     continue
 
             # Handle newline
-            if frame[i] == "\n":
+            if char == "\n":
                 cursor_row += 1
                 cursor_col = 0
                 i += 1
                 continue
 
             # Handle carriage return
-            if frame[i] == "\r":
+            if char == "\r":
                 cursor_col = 0
                 i += 1
                 continue
 
-            # Regular character - place at cursor position
-            if 0 <= cursor_row < canvas_height and 0 <= cursor_col < canvas_width:
-                grid[cursor_row][cursor_col] = (frame[i], current_color)
+            # Non-space character - add to sparse list
+            if char != " " and 0 <= cursor_row < canvas_height and 0 <= cursor_col < canvas_width:
+                cells.append((cursor_row, cursor_col, char, current_color))
+
             cursor_col += 1
             i += 1
 
-        # Return full grid - don't trim rows, as this preserves TTE's centering
-        return grid
+        return cells
 
     def _parse_color_codes(
         self, codes: List[str], current_color: Tuple[int, int, int]
@@ -272,22 +271,23 @@ class ANSIRenderer:
         canvas_width: int = 200,
         canvas_height: int = 100,
     ) -> None:
-        """Render an ANSI frame directly to a pygame surface."""
-        parsed = self.parse_ansi_frame(frame, canvas_width, canvas_height)
+        """Render an ANSI frame using sparse parsing + batch blitting."""
+        # Parse to sparse list (only non-empty cells)
+        cells = self.parse_ansi_frame_sparse(frame, canvas_width, canvas_height)
 
-        for row_idx, row in enumerate(parsed):
-            y = offset_y + row_idx * self.char_height
-            if y > surface.get_height():
-                break
+        if not cells:
+            return
 
-            for col_idx, (char, color) in enumerate(row):
-                x = offset_x + col_idx * self.char_width
-                if x > surface.get_width():
-                    break
+        # Build blit list directly from sparse cells
+        char_w = self.char_width
+        char_h = self.char_height
+        blit_list = [
+            (self.get_char_surface(char, color), (offset_x + col * char_w, offset_y + row * char_h))
+            for row, col, char, color in cells
+        ]
 
-                if char and char != " ":
-                    char_surface = self.get_char_surface(char, color)
-                    surface.blit(char_surface, (x, y))
+        # Batch blit all characters at once
+        surface.blits(blit_list, doreturn=False)
 
     def calculate_text_dimensions(self, text: str) -> Tuple[int, int]:
         """Calculate the pixel dimensions needed to render text."""
