@@ -151,8 +151,8 @@ class EffectManager:
         effect.terminal_config.canvas_height = self.canvas_height
 
         # Center the text within the canvas (like Omarchy's --anchor-text c)
-        effect.terminal_config.anchor_text = "c"  # Center text
-        effect.terminal_config.anchor_canvas = "c"  # Center canvas
+        # Canvas fills the monitor, so just center text within it
+        effect.terminal_config.anchor_text = "c"
 
         # Set frame rate to match our target
         effect.terminal_config.frame_rate = 0  # 0 = unlimited, we control timing
