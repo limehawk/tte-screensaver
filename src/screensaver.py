@@ -53,23 +53,33 @@ class Screensaver:
 
     def _init_pygame(self, fullscreen: bool = True) -> Tuple[int, int]:
         """Initialize pygame and create the display."""
-        pygame.init()
-        pygame.mouse.set_visible(False)
-
         if fullscreen:
-            # Get virtual desktop size (spans all monitors)
+            # Get virtual desktop size BEFORE pygame.init()
+            # This spans all monitors
             vx, vy, vw, vh = get_virtual_desktop_size()
             screen_size = (vw, vh)
 
-            # Position window at virtual desktop origin
+            # Set window position BEFORE init - critical for multi-monitor
             os.environ['SDL_VIDEO_WINDOW_POS'] = f"{vx},{vy}"
 
-            # Create borderless fullscreen window spanning all monitors
-            self.screen = pygame.display.set_mode(
-                screen_size,
-                pygame.NOFRAME | pygame.FULLSCREEN
-            )
+            pygame.init()
+            pygame.mouse.set_visible(False)
+
+            # Use NOFRAME only (not FULLSCREEN) to allow spanning monitors
+            # FULLSCREEN forces single-monitor mode
+            self.screen = pygame.display.set_mode(screen_size, pygame.NOFRAME)
+
+            # Bring window to front and make it topmost
+            try:
+                import ctypes
+                hwnd = pygame.display.get_wm_info()['window']
+                # HWND_TOPMOST = -1, SWP_NOSIZE = 1, SWP_NOMOVE = 2
+                ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 1 | 2)
+            except Exception:
+                pass
         else:
+            pygame.init()
+            pygame.mouse.set_visible(False)
             # Windowed mode for testing
             screen_size = (1280, 720)
             self.screen = pygame.display.set_mode(screen_size)
