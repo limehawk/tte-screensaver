@@ -147,9 +147,17 @@ class EffectManager:
         effect = effect_class(self.text)
 
         # Configure for external rendering (GUI mode)
+        # Use -1 to match input text dimensions (like Omarchy does with canvas-width 0)
+        # ignore_terminal_dimensions allows rendering outside terminal constraints
         effect.terminal_config.ignore_terminal_dimensions = True
-        effect.terminal_config.canvas_width = self.canvas_width
-        effect.terminal_config.canvas_height = self.canvas_height
+
+        # Use -1 to auto-size canvas to input text
+        # This prevents the effect from trying to fill a huge canvas
+        effect.terminal_config.canvas_width = -1
+        effect.terminal_config.canvas_height = -1
+
+        # Set frame rate to match our target
+        effect.terminal_config.frame_rate = 0  # 0 = unlimited, we control timing
 
         # Get the iterator
         self.state.current_iterator = iter(effect)

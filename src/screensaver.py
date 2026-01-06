@@ -145,19 +145,24 @@ class Screensaver:
         """Run the screensaver main loop."""
         try:
             screen_size = self._init_pygame(fullscreen)
-            canvas_width, canvas_height = self._calculate_canvas_size(screen_size)
+            self._calculate_canvas_size(screen_size)  # Creates renderer
 
-            # Store canvas dimensions for rendering
-            self.canvas_width = canvas_width
-            self.canvas_height = canvas_height
+            # Calculate canvas size based on ASCII art dimensions
+            lines = self.config.ascii_art.split("\n")
+            art_width = max(len(line) for line in lines) if lines else 80
+            art_height = len(lines)
+
+            # Add some padding for effect animations
+            self.canvas_width = art_width + 20
+            self.canvas_height = art_height + 10
 
             # Initialize effect manager - no timeout, effects run to completion
             self.effect_manager = EffectManager(
                 text=self.config.ascii_art,
                 enabled_effects=self.config.enabled_effects,
                 effect_duration=0,  # 0 = no timeout, only switch on completion
-                canvas_width=canvas_width,
-                canvas_height=canvas_height,
+                canvas_width=self.canvas_width,
+                canvas_height=self.canvas_height,
             )
 
             offset = self._calculate_text_offset(screen_size)
