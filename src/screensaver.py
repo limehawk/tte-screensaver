@@ -157,14 +157,10 @@ class Screensaver:
             screen_size = self._init_pygame(fullscreen)
             self._calculate_canvas_size(screen_size)  # Creates renderer
 
-            # Calculate canvas size based on ASCII art dimensions
-            lines = self.config.ascii_art.split("\n")
-            art_width = max(len(line) for line in lines) if lines else 80
-            art_height = len(lines)
-
-            # Add some padding for effect animations
-            self.canvas_width = art_width + 20
-            self.canvas_height = art_height + 10
+            # Calculate canvas size to fill the FULL SCREEN (in characters)
+            # This allows effects like Matrix/Rain to render across the entire display
+            self.canvas_width = screen_size[0] // self.renderer.char_width
+            self.canvas_height = screen_size[1] // self.renderer.char_height
 
             # Initialize effect manager - effects run to completion, then switch
             self.effect_manager = EffectManager(
@@ -174,7 +170,6 @@ class Screensaver:
                 canvas_height=self.canvas_height,
             )
 
-            offset = self._calculate_text_offset(screen_size)
             self.running = True
 
             while self.running:
@@ -195,13 +190,13 @@ class Screensaver:
                 # Clear screen
                 self.screen.fill(self.config.background_color)
 
-                # Render frame
+                # Render frame at (0,0) - TTE handles text centering internally
                 if frame and self.renderer:
                     self.renderer.render_frame(
                         frame,
                         self.screen,
-                        offset_x=offset[0],
-                        offset_y=offset[1],
+                        offset_x=0,
+                        offset_y=0,
                         canvas_width=self.canvas_width,
                         canvas_height=self.canvas_height,
                     )

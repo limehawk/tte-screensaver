@@ -142,14 +142,17 @@ class EffectManager:
         effect = effect_class(self.text)
 
         # Configure for external rendering (GUI mode)
-        # Use -1 to match input text dimensions (like Omarchy does with canvas-width 0)
         # ignore_terminal_dimensions allows rendering outside terminal constraints
         effect.terminal_config.ignore_terminal_dimensions = True
 
-        # Use -1 to auto-size canvas to input text
-        # This prevents the effect from trying to fill a huge canvas
-        effect.terminal_config.canvas_width = -1
-        effect.terminal_config.canvas_height = -1
+        # Use full screen canvas dimensions for effects like Matrix/Rain
+        # to render across the entire display, not just around the text
+        effect.terminal_config.canvas_width = self.canvas_width
+        effect.terminal_config.canvas_height = self.canvas_height
+
+        # Center the text within the canvas (like Omarchy's --anchor-text c)
+        effect.terminal_config.anchor_text = "c"  # Center text
+        effect.terminal_config.anchor_canvas = "c"  # Center canvas
 
         # Set frame rate to match our target
         effect.terminal_config.frame_rate = 0  # 0 = unlimited, we control timing
