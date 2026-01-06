@@ -103,17 +103,6 @@ class ConfigDialog:
         settings_frame = ttk.LabelFrame(main_frame, text="Settings", padding="10")
         settings_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # Effect duration
-        duration_frame = ttk.Frame(settings_frame)
-        duration_frame.pack(fill=tk.X, pady=2)
-
-        ttk.Label(duration_frame, text="Effect Duration (seconds):").pack(side=tk.LEFT)
-        self.duration_var = tk.StringVar(value=str(self.config.effect_duration))
-        duration_entry = ttk.Entry(
-            duration_frame, textvariable=self.duration_var, width=10
-        )
-        duration_entry.pack(side=tk.LEFT, padx=(10, 0))
-
         # Font size
         font_frame = ttk.Frame(settings_frame)
         font_frame.pack(fill=tk.X, pady=2)
@@ -161,14 +150,6 @@ class ConfigDialog:
     def _validate_and_get_config(self) -> Config | None:
         """Validate inputs and return new config, or None if invalid."""
         try:
-            duration = float(self.duration_var.get())
-            if duration <= 0:
-                raise ValueError("Duration must be positive")
-        except ValueError:
-            messagebox.showerror("Error", "Invalid effect duration. Must be a positive number.")
-            return None
-
-        try:
             font_size = int(self.font_var.get())
             if font_size <= 0:
                 raise ValueError("Font size must be positive")
@@ -197,7 +178,6 @@ class ConfigDialog:
         return Config(
             ascii_art=ascii_art,
             enabled_effects=enabled_effects,
-            effect_duration=duration,
             font_size=font_size,
             background_color=self.config.background_color,
             target_fps=fps,

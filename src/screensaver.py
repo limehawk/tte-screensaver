@@ -166,11 +166,10 @@ class Screensaver:
             self.canvas_width = art_width + 20
             self.canvas_height = art_height + 10
 
-            # Initialize effect manager - no timeout, effects run to completion
+            # Initialize effect manager - effects run to completion, then switch
             self.effect_manager = EffectManager(
                 text=self.config.ascii_art,
                 enabled_effects=self.config.enabled_effects,
-                effect_duration=0,  # 0 = no timeout, only switch on completion
                 canvas_width=self.canvas_width,
                 canvas_height=self.canvas_height,
             )

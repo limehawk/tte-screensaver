@@ -1,7 +1,6 @@
 """Effect management and cycling for tte-screensaver."""
 
 import random
-import time
 from typing import Iterator, Optional, Dict, Type, List
 from dataclasses import dataclass
 
@@ -93,7 +92,6 @@ class EffectState:
     """Tracks the current state of effect cycling."""
 
     current_effect_index: int = 0
-    effect_start_time: float = 0.0
     current_iterator: Optional[Iterator[str]] = None
     effect_completed: bool = False
 
@@ -105,7 +103,6 @@ class EffectManager:
         self,
         text: str,
         enabled_effects: List[str],
-        effect_duration: float = 15.0,
         canvas_width: int = 80,
         canvas_height: int = 24,
     ):
@@ -115,12 +112,10 @@ class EffectManager:
         Args:
             text: The ASCII art text to animate
             enabled_effects: List of effect names to cycle through
-            effect_duration: How long to run each effect before switching
             canvas_width: Width of the terminal canvas in characters
             canvas_height: Height of the terminal canvas in characters
         """
         self.text = text
-        self.effect_duration = effect_duration
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
 
@@ -161,7 +156,6 @@ class EffectManager:
 
         # Get the iterator
         self.state.current_iterator = iter(effect)
-        self.state.effect_start_time = time.time()
         self.state.effect_completed = False
 
     def get_current_effect_name(self) -> str:
@@ -170,11 +164,8 @@ class EffectManager:
 
     def should_switch_effect(self) -> bool:
         """Check if it's time to switch to the next effect."""
-        # If duration is 0, only switch when effect completes
-        if self.effect_duration <= 0:
-            return self.state.effect_completed
-        elapsed = time.time() - self.state.effect_start_time
-        return elapsed >= self.effect_duration or self.state.effect_completed
+        # Only switch when effect completes
+        return self.state.effect_completed
 
     def switch_to_next_effect(self) -> None:
         """Switch to a random different effect."""

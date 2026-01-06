@@ -62,10 +62,9 @@ class Config:
 
     ascii_art: str = DEFAULT_ASCII_ART
     enabled_effects: List[str] = field(default_factory=lambda: DEFAULT_EFFECTS.copy())
-    effect_duration: float = 15.0  # seconds per effect
     font_size: int = 20
     background_color: Tuple[int, int, int] = (0, 0, 0)
-    target_fps: int = 300
+    target_fps: int = 100
 
     def to_dict(self) -> dict:
         """Convert config to dictionary for JSON serialization."""
