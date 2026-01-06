@@ -162,6 +162,9 @@ class EffectManager:
 
     def should_switch_effect(self) -> bool:
         """Check if it's time to switch to the next effect."""
+        # If duration is 0, only switch when effect completes
+        if self.effect_duration <= 0:
+            return self.state.effect_completed
         elapsed = time.time() - self.state.effect_start_time
         return elapsed >= self.effect_duration or self.state.effect_completed
 

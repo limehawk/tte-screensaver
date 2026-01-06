@@ -147,11 +147,15 @@ class Screensaver:
             screen_size = self._init_pygame(fullscreen)
             canvas_width, canvas_height = self._calculate_canvas_size(screen_size)
 
-            # Initialize effect manager
+            # Store canvas dimensions for rendering
+            self.canvas_width = canvas_width
+            self.canvas_height = canvas_height
+
+            # Initialize effect manager - no timeout, effects run to completion
             self.effect_manager = EffectManager(
                 text=self.config.ascii_art,
                 enabled_effects=self.config.enabled_effects,
-                effect_duration=self.config.effect_duration,
+                effect_duration=0,  # 0 = no timeout, only switch on completion
                 canvas_width=canvas_width,
                 canvas_height=canvas_height,
             )
@@ -165,18 +169,13 @@ class Screensaver:
                     self.running = False
                     break
 
-                # Check if we should switch effects
-                if self.effect_manager.should_switch_effect():
-                    self.effect_manager.switch_to_next_effect()
-                    # Clear cache when switching effects
-                    if self.renderer:
-                        self.renderer.clear_cache()
-
                 # Get next frame
                 frame = self.effect_manager.get_next_frame()
                 if frame is None:
-                    # Effect completed, switch immediately
+                    # Effect completed, switch to next
                     self.effect_manager.switch_to_next_effect()
+                    if self.renderer:
+                        self.renderer.clear_cache()
                     frame = self.effect_manager.get_next_frame()
 
                 # Clear screen
@@ -189,6 +188,8 @@ class Screensaver:
                         self.screen,
                         offset_x=offset[0],
                         offset_y=offset[1],
+                        canvas_width=self.canvas_width,
+                        canvas_height=self.canvas_height,
                     )
 
                 # Update display

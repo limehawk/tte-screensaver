@@ -87,43 +87,75 @@ class ANSIRenderer:
         # Fallback to default font
         return pygame.font.Font(None, size)
 
-    def parse_ansi_frame(self, frame: str) -> List[List[Tuple[str, Tuple[int, int, int]]]]:
+    def parse_ansi_frame(self, frame: str, canvas_width: int = 200, canvas_height: int = 100) -> List[List[Tuple[str, Tuple[int, int, int]]]]:
         """
         Parse an ANSI frame into a grid of (character, color) tuples.
+        Properly handles cursor positioning escape codes.
 
         Returns a 2D list where each row is a list of (char, rgb_color) tuples.
         """
-        lines = frame.split("\n")
-        result = []
+        # Initialize grid with spaces
+        grid = [[(" ", self.default_fg_color) for _ in range(canvas_width)] for _ in range(canvas_height)]
+
         current_color = self.default_fg_color
+        cursor_row = 0
+        cursor_col = 0
 
-        for line in lines:
-            row = []
-            i = 0
-            while i < len(line):
-                # Check for ANSI escape sequence
-                if line[i] == "\x1b":
-                    # Try to match color code
-                    match = ANSI_ESCAPE.match(line, i)
-                    if match:
-                        codes = match.group(1).split(";")
-                        current_color = self._parse_color_codes(codes, current_color)
-                        i = match.end()
-                        continue
+        i = 0
+        while i < len(frame):
+            # Check for ANSI escape sequence
+            if frame[i] == "\x1b" and i + 1 < len(frame) and frame[i + 1] == "[":
+                # Try to match cursor position code first
+                pos_match = ANSI_CURSOR_POS.match(frame, i)
+                if pos_match:
+                    cursor_row = int(pos_match.group(1)) - 1  # 1-indexed to 0-indexed
+                    cursor_col = int(pos_match.group(2)) - 1
+                    i = pos_match.end()
+                    continue
 
-                    # Skip other ANSI codes
-                    other_match = ANSI_ANY.match(line, i)
-                    if other_match:
-                        i = other_match.end()
-                        continue
+                # Try to match color code
+                color_match = ANSI_ESCAPE.match(frame, i)
+                if color_match:
+                    codes = color_match.group(1).split(";")
+                    current_color = self._parse_color_codes(codes, current_color)
+                    i = color_match.end()
+                    continue
 
-                # Regular character
-                row.append((line[i], current_color))
+                # Skip other ANSI codes
+                other_match = ANSI_ANY.match(frame, i)
+                if other_match:
+                    i = other_match.end()
+                    continue
+
+            # Handle newline
+            if frame[i] == "\n":
+                cursor_row += 1
+                cursor_col = 0
                 i += 1
+                continue
 
-            result.append(row)
+            # Handle carriage return
+            if frame[i] == "\r":
+                cursor_col = 0
+                i += 1
+                continue
 
-        return result
+            # Regular character - place at cursor position
+            if 0 <= cursor_row < canvas_height and 0 <= cursor_col < canvas_width:
+                grid[cursor_row][cursor_col] = (frame[i], current_color)
+            cursor_col += 1
+            i += 1
+
+        # Trim empty rows from the result
+        result = []
+        for row in grid:
+            # Check if row has any non-space characters
+            if any(char != " " for char, _ in row):
+                result.append(row)
+            elif result:  # Keep empty rows in the middle
+                result.append(row)
+
+        return result if result else grid[:1]
 
     def _parse_color_codes(
         self, codes: List[str], current_color: Tuple[int, int, int]
@@ -245,9 +277,11 @@ class ANSIRenderer:
         surface: pygame.Surface,
         offset_x: int = 0,
         offset_y: int = 0,
+        canvas_width: int = 200,
+        canvas_height: int = 100,
     ) -> None:
         """Render an ANSI frame directly to a pygame surface."""
-        parsed = self.parse_ansi_frame(frame)
+        parsed = self.parse_ansi_frame(frame, canvas_width, canvas_height)
 
         for row_idx, row in enumerate(parsed):
             y = offset_y + row_idx * self.char_height
