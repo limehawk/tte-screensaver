@@ -26,7 +26,7 @@ from terminaltexteffects.effects.effect_overflow import Overflow
 from terminaltexteffects.effects.effect_pour import Pour
 from terminaltexteffects.effects.effect_print import Print
 from terminaltexteffects.effects.effect_rain import Rain
-from terminaltexteffects.effects.effect_randomsequence import RandomSequence
+from terminaltexteffects.effects.effect_random_sequence import RandomSequence
 from terminaltexteffects.effects.effect_rings import Rings
 from terminaltexteffects.effects.effect_scattered import Scattered
 from terminaltexteffects.effects.effect_slice import Slice

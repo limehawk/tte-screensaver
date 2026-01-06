@@ -32,7 +32,7 @@ pyinstaller --onefile --windowed ^
     --hidden-import terminaltexteffects.effects.effect_pour ^
     --hidden-import terminaltexteffects.effects.effect_print ^
     --hidden-import terminaltexteffects.effects.effect_rain ^
-    --hidden-import terminaltexteffects.effects.effect_randomsequence ^
+    --hidden-import terminaltexteffects.effects.effect_random_sequence ^
     --hidden-import terminaltexteffects.effects.effect_rings ^
     --hidden-import terminaltexteffects.effects.effect_scattered ^
     --hidden-import terminaltexteffects.effects.effect_slice ^
