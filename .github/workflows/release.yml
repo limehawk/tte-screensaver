@@ -69,7 +69,7 @@ jobs:
             --hidden-import terminaltexteffects.effects.effect_vhstape `
             --hidden-import terminaltexteffects.effects.effect_waves `
             --hidden-import terminaltexteffects.effects.effect_wipe `
-            src/main.py
+            run.py
 
       - name: Rename to .scr
         run: |
