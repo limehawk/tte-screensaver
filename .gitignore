@@ -26,3 +26,6 @@ config.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Local docs (research notes, not for repo)
+docs/
