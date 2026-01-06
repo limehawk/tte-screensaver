@@ -94,6 +94,10 @@ tte-screensaver/
 └── run.py               # Development runner
 ```
 
+## Credits
+
+Powered by [TerminalTextEffects](https://github.com/ChrisBuilds/terminaltexteffects) by ChrisBuilds (MIT License).
+
 ## License
 
 MIT
