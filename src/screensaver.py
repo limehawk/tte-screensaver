@@ -5,10 +5,10 @@ import sys
 import random
 import pygame
 from dataclasses import dataclass
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 from .config import Config, load_config
-from .renderer import ANSIRenderer
+from .renderer import ANSIRenderer, CellData
 from .effects import EffectManager
 
 
@@ -121,20 +121,26 @@ class MonitorEffect:
             start_index=start_index,
         )
 
+        # Track previous frame for delta rendering
+        self._prev_cells: Dict[Tuple[int, int], CellData] = {}
+
     def update_and_render(self, surface: pygame.Surface) -> None:
-        """Get next frame and render to the surface."""
+        """Get next frame and render to the surface using delta rendering."""
         frame = self.effect_manager.get_next_frame()
 
         if frame is None:
             # Effect completed, switch to next random effect
             self.effect_manager.switch_to_next_effect()
-            # Don't clear cache - it's keyed by (char, color) and still valid
+            # Reset prev_cells on effect switch (need full redraw)
+            self._prev_cells = {}
             frame = self.effect_manager.get_next_frame()
 
         if frame:
-            self.renderer.render_frame(
+            # Use delta rendering - only update changed cells
+            self._prev_cells = self.renderer.render_frame_delta(
                 frame,
                 surface,
+                self._prev_cells,
                 offset_x=self.offset_x,
                 offset_y=self.offset_y,
                 canvas_width=self.canvas_width,
@@ -169,7 +175,9 @@ class Screensaver:
             pygame.init()
             pygame.mouse.set_visible(False)
 
-            self.screen = pygame.display.set_mode(screen_size, pygame.NOFRAME)
+            self.screen = pygame.display.set_mode(
+                screen_size, pygame.NOFRAME | pygame.HWSURFACE | pygame.DOUBLEBUF
+            )
 
             # Make window topmost
             try:
@@ -252,15 +260,16 @@ class Screensaver:
 
             self.running = True
 
+            # Clear screen once at startup (delta rendering handles subsequent frames)
+            self.screen.fill(self.config.background_color)
+
             while self.running:
                 if not self._handle_events():
                     self.running = False
                     break
 
-                # Clear screen
-                self.screen.fill(self.config.background_color)
-
-                # Render each monitor's effect independently
+                # Render each monitor's effect using delta rendering
+                # (only updates changed cells, much faster than full redraw)
                 for monitor_effect in self.monitor_effects:
                     monitor_effect.update_and_render(self.screen)
 

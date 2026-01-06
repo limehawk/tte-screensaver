@@ -3,16 +3,19 @@
 import os
 import re
 import sys
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict, Set
 from pathlib import Path
 import pygame
 
 
-# ANSI escape code patterns
+# ANSI escape code patterns - pre-compiled for speed
 ANSI_ESCAPE = re.compile(r"\x1b\[([0-9;]*)m")
 ANSI_CURSOR_POS = re.compile(r"\x1b\[(\d+);(\d+)H")
 ANSI_CLEAR = re.compile(r"\x1b\[2?J")
 ANSI_ANY = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+# Type alias for cell data
+CellData = Tuple[str, Tuple[int, int, int]]  # (char, color)
 
 
 def get_bundled_font_path() -> Optional[Path]:
@@ -52,6 +55,10 @@ class ANSIRenderer:
 
         # Character surface cache for performance
         self._char_cache: dict = {}
+
+        # Pre-create background tile for clearing cells
+        self._bg_tile = pygame.Surface((self.char_width, self.char_height))
+        self._bg_tile.fill(background_color)
 
     def _get_monospace_font(self, size: int) -> pygame.font.Font:
         """Get a monospace font, trying bundled font first."""
@@ -261,6 +268,74 @@ class ANSIRenderer:
         if cache_key not in self._char_cache:
             self._char_cache[cache_key] = self.font.render(char, True, color)
         return self._char_cache[cache_key]
+
+    def parse_to_dict(
+        self, frame: str, canvas_width: int, canvas_height: int
+    ) -> Dict[Tuple[int, int], CellData]:
+        """Parse ANSI frame into dict keyed by (row, col) for delta comparison."""
+        cells = self.parse_ansi_frame_sparse(frame, canvas_width, canvas_height)
+        return {(row, col): (char, color) for row, col, char, color in cells}
+
+    def render_frame_delta(
+        self,
+        frame: str,
+        surface: pygame.Surface,
+        prev_cells: Dict[Tuple[int, int], CellData],
+        offset_x: int = 0,
+        offset_y: int = 0,
+        canvas_width: int = 200,
+        canvas_height: int = 100,
+    ) -> Dict[Tuple[int, int], CellData]:
+        """
+        Render only the delta between previous and current frame.
+        Returns the current cells dict for use as prev_cells next frame.
+        """
+        # Parse current frame to dict
+        curr_cells = self.parse_to_dict(frame, canvas_width, canvas_height)
+
+        char_w = self.char_width
+        char_h = self.char_height
+        bg_tile = self._bg_tile
+
+        # Find cells to clear (were in prev, not in curr OR changed)
+        # Find cells to draw (new or changed)
+        clear_list = []
+        draw_list = []
+
+        # Check cells that were previously drawn
+        prev_keys = set(prev_cells.keys())
+        curr_keys = set(curr_cells.keys())
+
+        # Cells that need to be cleared (no longer present)
+        for pos in prev_keys - curr_keys:
+            row, col = pos
+            px = offset_x + col * char_w
+            py = offset_y + row * char_h
+            clear_list.append((bg_tile, (px, py)))
+
+        # Cells that are new or changed
+        for pos in curr_keys:
+            curr_data = curr_cells[pos]
+            prev_data = prev_cells.get(pos)
+
+            if prev_data != curr_data:
+                # New or changed cell - need to draw
+                row, col = pos
+                char, color = curr_data
+                px = offset_x + col * char_w
+                py = offset_y + row * char_h
+                # Clear first if there was something different
+                if prev_data is not None:
+                    clear_list.append((bg_tile, (px, py)))
+                draw_list.append((self.get_char_surface(char, color), (px, py)))
+
+        # Batch operations
+        if clear_list:
+            surface.blits(clear_list, doreturn=False)
+        if draw_list:
+            surface.blits(draw_list, doreturn=False)
+
+        return curr_cells
 
     def render_frame(
         self,

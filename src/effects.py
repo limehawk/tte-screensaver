@@ -187,12 +187,17 @@ class EffectManager:
         self._start_background_preload()
 
     def get_next_frame(self) -> Optional[str]:
-        """Get the next frame. Returns None when effect completes."""
+        """Get the next frame. Returns None when effect completes or errors."""
         if self._current_iterator is None:
             return None
 
         try:
             return next(self._current_iterator)
         except StopIteration:
+            self._effect_completed = True
+            return None
+        except Exception:
+            # Some TTE effects have bugs (e.g., Blackhole IndexError)
+            # Gracefully skip to next effect
             self._effect_completed = True
             return None
