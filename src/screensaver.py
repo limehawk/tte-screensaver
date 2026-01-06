@@ -125,7 +125,7 @@ class MonitorEffect:
         if frame is None:
             # Effect completed, switch to next random effect
             self.effect_manager.switch_to_next_effect()
-            self.renderer.clear_cache()
+            # Don't clear cache - it's keyed by (char, color) and still valid
             frame = self.effect_manager.get_next_frame()
 
         if frame:
