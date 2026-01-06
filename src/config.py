@@ -62,7 +62,7 @@ class Config:
 
     ascii_art: str = DEFAULT_ASCII_ART
     enabled_effects: List[str] = field(default_factory=lambda: DEFAULT_EFFECTS.copy())
-    font_size: int = 40  # Larger = fewer cells = better performance
+    font_size: int = 18  # Match Omarchy
     background_color: Tuple[int, int, int] = (0, 0, 0)
     target_fps: int = 120  # Match Omarchy
 

@@ -2,6 +2,7 @@
 
 import os
 import sys
+import random
 import pygame
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
@@ -96,7 +97,8 @@ class MonitorEffect:
         monitor: MonitorInfo,
         config: Config,
         renderer: ANSIRenderer,
-        virtual_origin: Tuple[int, int]
+        virtual_origin: Tuple[int, int],
+        start_index: int = 0,
     ):
         self.monitor = monitor
         self.config = config
@@ -110,12 +112,13 @@ class MonitorEffect:
         self.canvas_width = monitor.width // renderer.char_width
         self.canvas_height = monitor.height // renderer.char_height
 
-        # Create effect manager for this monitor
+        # Create effect manager for this monitor with unique starting effect
         self.effect_manager = EffectManager(
             text=config.ascii_art,
             enabled_effects=config.enabled_effects,
             canvas_width=self.canvas_width,
             canvas_height=self.canvas_height,
+            start_index=start_index,
         )
 
     def update_and_render(self, surface: pygame.Surface) -> None:
@@ -236,10 +239,15 @@ class Screensaver:
             for i, m in enumerate(monitors):
                 print(f"  Monitor {i+1}: {m.width}x{m.height} at ({m.x}, {m.y})", file=sys.stderr)
 
-            # Create independent effect for each monitor
+            # Create independent effect for each monitor with different starting effects
+            # Spread start indices apart so monitors don't show same effect
+            num_effects = len(self.config.enabled_effects)
             self.monitor_effects = [
-                MonitorEffect(monitor, self.config, self.renderer, virtual_origin)
-                for monitor in monitors
+                MonitorEffect(
+                    monitor, self.config, self.renderer, virtual_origin,
+                    start_index=(i * num_effects // len(monitors)) + random.randint(0, 5)
+                )
+                for i, monitor in enumerate(monitors)
             ]
 
             self.running = True

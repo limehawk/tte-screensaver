@@ -96,6 +96,7 @@ class EffectManager:
         enabled_effects: List[str],
         canvas_width: int = 80,
         canvas_height: int = 24,
+        start_index: Optional[int] = None,
     ):
         self.text = text
         self.canvas_width = canvas_width
@@ -108,9 +109,15 @@ class EffectManager:
         if not self.enabled_effects:
             self.enabled_effects = ["Matrix", "Rain", "Decrypt"]
 
-        random.shuffle(self.enabled_effects)
+        # Don't shuffle - use truly random selection each time
+        # This prevents monitors from syncing up
 
-        self._current_index = 0
+        # Start at a random index (or specified one for diversity across monitors)
+        if start_index is not None:
+            self._current_index = start_index % len(self.enabled_effects)
+        else:
+            self._current_index = random.randint(0, len(self.enabled_effects) - 1)
+
         self._current_iterator: Optional[Iterator[str]] = None
         self._next_iterator: Optional[Iterator[str]] = None
         self._next_index: Optional[int] = None
