@@ -2,17 +2,18 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "dependencyDashboard": true,
+  "ignoreTests": true,
   "packageRules": [
     {
+      "description": "Automerge patch updates (bug/security fixes)",
       "matchUpdateTypes": ["patch"],
-      "automerge": true,
-      "description": "Automerge patch updates (bug/security fixes)"
+      "automerge": true
     },
     {
+      "description": "Automerge devDeps minor/patch (cannot break production)",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true,
-      "description": "Automerge devDeps (cannot break production)"
+      "automerge": true
     }
   ]
 }
